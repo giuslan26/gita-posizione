@@ -50,13 +50,9 @@
 
   <script>
     const endpoint = "https://script.google.com/macros/s/AKfycbza0UEaGar4myCLEjXYdrKJvu-nf_S0H3ioEH5Bek40oYNVYMwDkktqhD_0x-8vgLqUXA/exec";
-const busIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png",
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
-});
+
     let map = L.map('map').setView([44.9, 8.2], 13);
-    let marker = L.marker([44.9, 8.2], { icon: busIcon }).addTo(map);
+    let marker = L.marker([44.9, 8.2]).addTo(map);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
