@@ -19,16 +19,14 @@
 
       navigator.geolocation.getCurrentPosition(
         pos => {
-          fetch(endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude
-            })
-          });
+         const fd = new FormData();
+fd.append("lat", pos.coords.latitude);
+fd.append("lon", pos.coords.longitude);
+
+fetch(endpoint, {
+  method: "POST",
+  body: fd
+});
         },
         err => {
           console.log("Errore geolocalizzazione:", err);
