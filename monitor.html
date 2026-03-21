@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoraggio Gita – Aggiornamenti in tempo reale</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      background: #f7f7f7;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #map {
+      height: 350px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+    }
+    .msg {
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #0077cc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .timestamp {
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Monitoraggio della Gita</h2>
+  <p style="text-align:center; color:#444;">Aggiornamenti automatici ogni 30 secondi</p>
+
+  <div id="map"></div>
+
+  <h3>Ultimi aggiornamenti</h3>
+  <div id="messages"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    const endpoint = "https://script.google.com/macros/s/AKfycbzmkH-vXRzY-ZZgMvG01HLgzu5TBmBC5zk6T1V9ZcNjpvjGbJjxvjKnceqlK_hckzOaUA/exec";
+
+    let map = L.map('map').setView([44.9, 8.2], 13);
+    let marker = L.marker([44.9, 8.2]).addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
+
+    function updateMonitor() {
+      fetch(endpoint)
+        .then(res => res.json())
+        .then(rows => {
+          if (rows.length === 0) return;
+
+          const last = rows[rows.length - 1];
+
+          // aggiorna mappa
+          if (last.lat && last.lon) {
+            marker.setLatLng([last.lat, last.lon]);
+            map.setView([last.lat, last.lon], 15);
+          }
+
+          // aggiorna messaggi
+          const msgDiv = document.getElementById("messages");
+          msgDiv.innerHTML = "";
+
+          rows.reverse().forEach(r => {
+            if (r.msg) {
+              msgDiv.innerHTML += `
+                <div class="msg">
+                  <div class="timestamp">${new Date(r.timestamp).toLocaleString()}</div>
+                  <div>${r.msg}</div>
+                </div>
+              `;
+            }
+          });
+        });
+    }
+
+    // aggiorna ogni 30 secondi
+    setInterval(updateMonitor, 30000);
+    updateMonitor();
+  </script>
+</body>
+</html>
