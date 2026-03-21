@@ -3,38 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <title>Invio posizione gita</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    #map {
+      height: 300px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      cursor: pointer;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+  </style>
 </head>
+
 <body>
   <h2>Invio posizione attivo</h2>
   <p>Lascia questa pagina aperta durante la gita.</p>
 
+  <div id="map"></div>
+
+  <h3>Invia un messaggio</h3>
+  <input type="text" id="msgInput" placeholder="Scrivi un messaggio..." />
+  <button onclick="sendMessage()">Invia messaggio</button>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
   <script>
     const endpoint = "https://script.google.com/macros/s/AKfycbz7AljtORZ6-h8upokljccF-4EmKRwfPNq2jmf88EuRbypQQzU5xOr7RkxCXqvyQcs1/exec";
 
-    function sendPosition() {
-      if (!navigator.geolocation) {
-        alert("La geolocalizzazione non è supportata dal tuo dispositivo.");
-        return;
-      }
+    let map = L.map('map').setView([44.9, 8.2], 13);
+    let marker = L.marker([44.9, 8.2]).addTo(map);
 
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-         const fd = new FormData();
-fd.append("lat", pos.coords.latitude);
-fd.append("lon", pos.coords.longitude);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
 
-fetch(endpoint, {
-  method: "POST",
-  body: fd
-});
-        },
-        err => {
-          console.log("Errore geolocalizzazione:", err);
-        }
-      );
+    function updateMap(lat, lon) {
+      marker.setLatLng([lat, lon]);
+      map.setView([lat, lon], 15);
     }
 
-    // invia la posizione ogni 15 minuti
+    function sendPosition() {
+      if (!navigator.geolocation) return;
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+
+        updateMap(lat, lon);
+
+        const fd = new FormData();
+        fd.append("lat", lat);
+        fd.append("lon", lon);
+
+        fetch(endpoint, { method: "POST", body: fd });
+      });
+    }
+
+    function sendMessage() {
+      const msg = document.getElementById("msgInput").value;
+      if (!msg) return;
+
+      const fd = new FormData();
+      fd.append("msg", msg);
+
+      fetch(endpoint, { method: "POST", body: fd });
+
+      document.getElementById("msgInput").value = "";
+    }
+
     setInterval(sendPosition, 900000);
     sendPosition();
   </script>
