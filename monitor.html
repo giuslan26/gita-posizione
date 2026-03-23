@@ -63,26 +63,27 @@
         .then(res => res.json())
         .then(rows => {
 
-          // Se c'è solo l'intestazione, esci
           if (rows.length <= 1) return;
 
-          // IGNORA la riga di intestazione
+          // IGNORA intestazione
           const data = rows.slice(1);
 
+          // ultima riga valida
           const last = data[data.length - 1];
 
-          // aggiorna mappa
           if (last.lat && last.lon) {
             marker.setLatLng([last.lat, last.lon]);
             map.setView([last.lat, last.lon], 15);
           }
 
-          // aggiorna messaggi
           const msgDiv = document.getElementById("messages");
           msgDiv.innerHTML = "";
 
-          data.slice().reverse().forEach(r => {
-            if (r.msg) {
+          // copia invertita SENZA toccare l’array originale
+          const reversed = data.slice().reverse();
+
+          reversed.forEach(r => {
+            if (r.msg && r.msg.trim() !== "") {
               msgDiv.innerHTML += `
                 <div class="msg">
                   <div class="timestamp">${new Date(r.timestamp).toLocaleString()}</div>
@@ -94,7 +95,6 @@
         });
     }
 
-    // aggiorna ogni 30 secondi
     setInterval(updateMonitor, 30000);
     updateMonitor();
   </script>
