@@ -8,11 +8,10 @@
     <style>
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
         #map { height: 250px; border-radius: 12px; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { margin-top: 0; color: #1a73e8; font-size: 1.2rem; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        h2 { margin-top: 0; color: #1a73e8; font-size: 1.2rem; text-align: center; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
-        button:active { background: #1557b0; }
         #status { font-size: 0.85rem; color: #666; margin-top: 10px; text-align: center; }
     </style>
 </head>
@@ -21,16 +20,14 @@
 <div class="card">
     <h2>Pannello Docente</h2>
     <div id="map"></div>
-    
-    <input type="text" id="msgInput" placeholder="Esempio: Arrivati al museo!" />
+    <input type="text" id="msgInput" placeholder="Scrivi un messaggio (es: Arrivati!)" />
     <button onclick="sendMessage()">Invia Messaggio e Posizione</button>
-    
     <div id="status">In attesa di GPS...</div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-    // SOSTITUISCI CON IL TUO URL .exec
+    // INCOLLA QUI IL TUO URL .exec
     const endpoint = "https://script.google.com/macros/s/AKfycbyVfR5Cw-8PMa0I6WwHMH4k99-ZmU7P8G4_LMa_nrGri6swEmJK7msEReiOW3ZXppgmxg/exec";
 
     let map = L.map('map').setView([45.0, 9.0], 13);
@@ -41,9 +38,9 @@
         const query = new URLSearchParams(payload).toString();
         try {
             await fetch(`${endpoint}?${query}`, { method: "POST", mode: "no-cors" });
-            document.getElementById("status").innerText = "Ultimo aggiornamento: " + new Date().toLocaleTimeString();
+            document.getElementById("status").innerText = "Ultimo invio: " + new Date().toLocaleTimeString();
         } catch (e) {
-            document.getElementById("status").innerText = "Errore invio dati!";
+            document.getElementById("status").innerText = "Errore di connessione!";
         }
     }
 
@@ -55,25 +52,22 @@
             marker.setLatLng([lat, lon]);
             map.setView([lat, lon], 15);
             sendData({ lat, lon, msg: "" });
-        }, null, { enableHighAccuracy: true });
+        }, (err) => {
+            document.getElementById("status").innerText = "GPS non disponibile.";
+        }, { enableHighAccuracy: true });
     }
 
     function sendMessage() {
         const msgField = document.getElementById("msgInput");
-        const msg = msgField.value;
-        if (!msg) return;
-
+        if (!msgField.value) return;
         const lat = marker.getLatLng().lat;
         const lon = marker.getLatLng().lng;
-
-        sendData({ lat, lon, msg });
+        sendData({ lat, lon, msg: msgField.value });
         msgField.value = "";
         alert("Messaggio inviato!");
     }
 
-    // Invio automatico ogni 15 minuti (900000 ms)
-    setInterval(sendPosition, 900000);
-    // Primo invio all'avvio
+    setInterval(sendPosition, 900000); // 15 minuti
     sendPosition();
 </script>
 </body>
