@@ -12,35 +12,42 @@
         .msg-box { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #1a73e8; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .time { font-size: 0.75rem; color: #888; }
         .text { margin-top: 5px; font-weight: bold; color: #333; }
-        h2 { text-align: center; color: #333; font-size: 1.2rem; }
+        h2 { text-align: center; color: #333; }
+        #debug-status { font-size: 0.8rem; text-align: center; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📍 Tracking Gita in Tempo Reale</h2>
+    <h2>📍 Tracking Gita scolastica</h2>
+    <div id="debug-status">Inizializzazione...</div>
     <div id="map"></div>
-    <h3>Ultimi Messaggi</h3>
-    <div id="messages">Caricamento aggiornamenti...</div>
+    <h3>Ultimi Aggiornamenti</h3>
+    <div id="messages">Caricamento messaggi...</div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-    // SOSTITUISCI CON IL TUO URL .exec
-    const endpoint = "https://script.google.com/macros/s/AKfycbwdoDAuowRZNY-tLQ2kHdIW_RWEKTPqx7qdw_eaBH2P-S2j84I1kZ_dMCb3BW3jTI2IpQ/exec";
+    // INCOLLA QUI IL TUO URL .exec
+    const endpoint = "https://script.google.com/macros/s/AKfycbyVfR5Cw-8PMa0I6WwHMH4k99-ZmU7P8G4_LMa_nrGri6swEmJK7msEReiOW3ZXppgmxg/exec";
 
     let map = L.map('map').setView([45.0, 9.0], 13);
     let marker = L.marker([45.0, 9.0]).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     function updateMonitor() {
+        const debug = document.getElementById("debug-status");
         fetch(`${endpoint}?nocache=${new Date().getTime()}`)
             .then(res => res.json())
             .then(data => {
-                if (!data || data.length === 0) return;
+                debug.innerText = "Dati aggiornati alle " + new Date().toLocaleTimeString();
+                if (!data || data.length === 0) {
+                    document.getElementById("messages").innerHTML = "Nessun messaggio disponibile.";
+                    return;
+                }
 
                 // Trova ultima posizione valida
-                const lastPos = [...data].reverse().find(r => r.lat && r.lon);
+                const lastPos = [...data].reverse().find(r => r.lat && r.lon && r.lat !== "");
                 if (lastPos) {
                     marker.setLatLng([lastPos.lat, lastPos.lon]);
                     map.setView([lastPos.lat, lastPos.lon], 15);
@@ -50,7 +57,7 @@
                 const msgDiv = document.getElementById("messages");
                 msgDiv.innerHTML = "";
                 [...data].reverse().forEach(r => {
-                    if (r.msg) {
+                    if (r.msg && r.msg.trim() !== "") {
                         const date = new Date(r.timestamp).toLocaleString('it-IT');
                         msgDiv.innerHTML += `
                             <div class="msg-box">
@@ -60,10 +67,13 @@
                     }
                 });
             })
-            .catch(err => console.error("Errore lettura:", err));
+            .catch(err => {
+                debug.innerText = "Errore di connessione: verifica lo script.";
+                console.error(err);
+            });
     }
 
-    setInterval(updateMonitor, 30000); // Controlla nuovi dati ogni 30 secondi
+    setInterval(updateMonitor, 30000); 
     updateMonitor();
 </script>
 </body>
