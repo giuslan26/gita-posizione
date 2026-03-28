@@ -1,102 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Monitoraggio Gita – Aggiornamenti in tempo reale</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 15px;
-      background: #f7f7f7;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    #map {
-      height: 350px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-    }
-    .msg {
-      background: white;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border-left: 4px solid #0077cc;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .timestamp {
-      font-size: 12px;
-      color: #666;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoraggio Gita</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: #f4f4f9; }
+        #map { height: 350px; width: 100%; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 600px; margin: auto; }
+        .msg-box { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #1a73e8; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .time { font-size: 0.75rem; color: #888; }
+        .text { margin-top: 5px; font-weight: bold; color: #333; }
+        h2 { text-align: center; color: #333; font-size: 1.2rem; }
+    </style>
 </head>
-
 <body>
-  <h2>Monitoraggio della Gita</h2>
-  <p style="text-align:center; color:#444;">Aggiornamenti automatici ogni 30 secondi</p>
 
-  <div id="map"></div>
+<div class="container">
+    <h2>📍 Tracking Gita in Tempo Reale</h2>
+    <div id="map"></div>
+    <h3>Ultimi Messaggi</h3>
+    <div id="messages">Caricamento aggiornamenti...</div>
+</div>
 
-  <h3>Ultimi aggiornamenti</h3>
-  <div id="messages"></div>
-
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    // SOSTITUISCI CON IL TUO URL .exec
     const endpoint = "https://script.google.com/macros/s/AKfycbxOxOYTqIVmqvTqVOQfWrMXfUxuotEIacWxNRhdSeiLtYrkRy5b5gvKV05o44LbfJ5oNg/exec";
-    
-    let map = L.map('map').setView([44.9, 8.2], 13);
-    let marker = L.marker([44.9, 8.2]).addTo(map);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
+
+    let map = L.map('map').setView([45.0, 9.0], 13);
+    let marker = L.marker([45.0, 9.0]).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     function updateMonitor() {
-      fetch(endpoint)
-        .then(res => res.json())
-        .then(rows => {
+        fetch(`${endpoint}?nocache=${new Date().getTime()}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data || data.length === 0) return;
 
-          if (rows.length <= 1) return;
+                // Trova ultima posizione valida
+                const lastPos = [...data].reverse().find(r => r.lat && r.lon);
+                if (lastPos) {
+                    marker.setLatLng([lastPos.lat, lastPos.lon]);
+                    map.setView([lastPos.lat, lastPos.lon], 15);
+                }
 
-          // IGNORA intestazione
-          const data = rows.slice(1);
-
-          // ultima riga valida
-          const last = data[data.length - 1];
-
-          if (last.lat && last.lon) {
-            marker.setLatLng([last.lat, last.lon]);
-            map.setView([last.lat, last.lon], 15);
-          }
-
-          const msgDiv = document.getElementById("messages");
-          msgDiv.innerHTML = "";
-
-          // copia invertita SENZA toccare l’array originale
-          const reversed = data.slice().reverse();
-
-          reversed.forEach(r => {
-            if (r.msg && r.msg.trim() !== "") {
-              msgDiv.innerHTML += `
-                <div class="msg">
-                  <div class="timestamp">${new Date(r.timestamp).toLocaleString()}</div>
-                  <div>${r.msg}</div>
-                </div>
-              `;
-            }
-          });
-        });
+                // Lista messaggi
+                const msgDiv = document.getElementById("messages");
+                msgDiv.innerHTML = "";
+                [...data].reverse().forEach(r => {
+                    if (r.msg) {
+                        const date = new Date(r.timestamp).toLocaleString('it-IT');
+                        msgDiv.innerHTML += `
+                            <div class="msg-box">
+                                <div class="time">${date}</div>
+                                <div class="text">${r.msg}</div>
+                            </div>`;
+                    }
+                });
+            })
+            .catch(err => console.error("Errore lettura:", err));
     }
 
-    setInterval(updateMonitor, 30000);
+    setInterval(updateMonitor, 30000); // Controlla nuovi dati ogni 30 secondi
     updateMonitor();
-  </script>
+</script>
 </body>
 </html>
